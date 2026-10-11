@@ -34,6 +34,11 @@ with open(p, "w") as f:
     json.dump(d, f, indent=1)
 '
 
+if [ ! -d "apps/crm" ]; then
+    echo "Fetching CRM app..."
+    bench get-app crm https://github.com/ParaLogicTech/crm --branch version-14
+fi
+
 if [ ! -d "apps/erpnext" ]; then
     echo "Fetching ERPNext app..."
     bench get-app erpnext https://github.com/ParaLogicTech/erpnext --branch version-14
@@ -49,8 +54,15 @@ fi
 if [ ! -d "sites/textile.localhost" ]; then
     echo "Creating new site textile.localhost..."
     bench new-site textile.localhost --db-root-password admin --admin-password admin --force
+    bench --site textile.localhost install-app crm
     bench --site textile.localhost install-app erpnext
     bench --site textile.localhost install-app textile
+    bench use textile.localhost
+    bench --site textile.localhost set-config dns_multitenant false
+else
+    bench --site textile.localhost install-app crm || true
+    bench --site textile.localhost install-app erpnext || true
+    bench --site textile.localhost install-app textile || true
     bench use textile.localhost
     bench --site textile.localhost set-config dns_multitenant false
 fi
