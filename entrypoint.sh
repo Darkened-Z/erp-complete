@@ -34,6 +34,11 @@ with open(p, "w") as f:
     json.dump(d, f, indent=1)
 '
 
+if [ ! -d "apps/payments" ]; then
+    echo "Fetching Payments app..."
+    bench get-app payments https://github.com/frappe/payments --branch version-14
+fi
+
 if [ ! -d "apps/crm" ]; then
     echo "Fetching CRM app..."
     bench get-app crm https://github.com/ParaLogicTech/crm --branch version-14
@@ -50,10 +55,10 @@ if [ ! -d "apps/textile" ]; then
 fi
 
 if [ ! -f "sites/textile.localhost/.installed" ]; then
-    echo "Creating clean site textile.localhost with crm, erpnext, textile..."
+    echo "Creating clean site textile.localhost with payments, crm, erpnext, textile..."
     bench drop-site textile.localhost --db-root-password admin --force || true
     rm -rf sites/textile.localhost
-    bench new-site textile.localhost --db-root-password admin --admin-password admin --force --install-app crm --install-app erpnext --install-app textile
+    bench new-site textile.localhost --db-root-password admin --admin-password admin --force --install-app payments --install-app crm --install-app erpnext --install-app textile
     bench use textile.localhost
     bench --site textile.localhost set-config dns_multitenant false
     touch sites/textile.localhost/.installed
