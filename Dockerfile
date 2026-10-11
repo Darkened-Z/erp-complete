@@ -15,13 +15,13 @@ RUN useradd -m -s /bin/bash frappe \
     && usermod -aG sudo frappe \
     && echo "frappe ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/frappe
 
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 USER frappe
 WORKDIR /home/frappe
 ENV PATH="/home/frappe/.local/bin:${PATH}"
 
 RUN pip3 install frappe-bench
 
-COPY entrypoint.sh /home/frappe/entrypoint.sh
-RUN sudo chmod +x /home/frappe/entrypoint.sh
-
-ENTRYPOINT ["/home/frappe/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
