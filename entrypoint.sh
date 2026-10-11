@@ -12,35 +12,53 @@ cd /home/frappe
 if [ ! -d "/home/frappe/frappe-bench/apps/frappe" ]; then
     echo "Initializing Frappe Bench with ParaLogic fork..."
     bench init --frappe-branch version-14 --frappe-path https://github.com/ParaLogicTech/frappe frappe-bench --skip-redis-config-generation
-    cd frappe-bench
+fi
 
-    bench set-mariadb-host db
-    bench set-redis-cache-host redis:6379
-    bench set-redis-queue-host redis:6379
-    bench set-redis-socketio-host redis:6379
+cd /home/frappe/frappe-bench
 
-    echo "Fetching ERPNext and Textile apps..."
+python3 -c '
+import json
+p = "sites/common_site_config.json"
+try:
+    with open(p, "r") as f:
+        d = json.load(f)
+except Exception:
+    d = {}
+d["db_host"] = "db"
+d["redis_cache"] = "redis://redis:6379"
+d["redis_queue"] = "redis://redis:6379"
+d["redis_socketio"] = "redis://redis:6379"
+d["serve_default_site"] = True
+d["developer_mode"] = 1
+with open(p, "w") as f:
+    json.dump(d, f, indent=1)
+'
+
+if [ ! -d "apps/erpnext" ]; then
+    echo "Fetching ERPNext app..."
     bench get-app erpnext https://github.com/ParaLogicTech/erpnext --branch version-14
-    bench get-app textile https://github.com/ParaLogicTech/textile --branch version-14
+else
+    bench build --app erpnext || true
+fi
 
-    echo "Creating new site..."
+if [ ! -d "apps/textile" ]; then
+    echo "Fetching Textile app..."
+    bench get-app textile https://github.com/ParaLogicTech/textile --branch version-14
+fi
+
+if [ ! -d "sites/textile.localhost" ]; then
+    echo "Creating new site textile.localhost..."
     bench new-site textile.localhost --db-root-password admin --admin-password admin --force
     bench --site textile.localhost install-app erpnext
     bench --site textile.localhost install-app textile
     bench use textile.localhost
     bench --site textile.localhost set-config dns_multitenant false
-    echo "textile.localhost" > sites/currentsite.txt
+fi
 
-    if [ -f "Procfile" ]; then
-        sed -i 's/bench serve --port 8000/bench serve --port 8000 --host 0.0.0.0/g' Procfile
-    fi
-else
-    echo "Bench already initialized."
-    cd frappe-bench
-    echo "textile.localhost" > sites/currentsite.txt
-    if [ -f "Procfile" ]; then
-        sed -i 's/bench serve --port 8000/bench serve --port 8000 --host 0.0.0.0/g' Procfile
-    fi
+echo "textile.localhost" > sites/currentsite.txt
+
+if [ -f "Procfile" ]; then
+    sed -i 's/bench serve --port 8000/bench serve --port 8000 --host 0.0.0.0/g' Procfile
 fi
 
 echo "Starting bench..."
