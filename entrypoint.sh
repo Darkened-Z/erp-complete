@@ -42,8 +42,6 @@ fi
 if [ ! -d "apps/erpnext" ]; then
     echo "Fetching ERPNext app..."
     bench get-app erpnext https://github.com/ParaLogicTech/erpnext --branch version-14
-else
-    bench build --app erpnext || true
 fi
 
 if [ ! -d "apps/textile" ]; then
@@ -51,20 +49,14 @@ if [ ! -d "apps/textile" ]; then
     bench get-app textile https://github.com/ParaLogicTech/textile --branch version-14
 fi
 
-if [ ! -d "sites/textile.localhost" ]; then
-    echo "Creating new site textile.localhost..."
-    bench new-site textile.localhost --db-root-password admin --admin-password admin --force
-    bench --site textile.localhost install-app crm
-    bench --site textile.localhost install-app erpnext
-    bench --site textile.localhost install-app textile
+if [ ! -f "sites/textile.localhost/.installed" ]; then
+    echo "Creating clean site textile.localhost with crm, erpnext, textile..."
+    bench drop-site textile.localhost --db-root-password admin --force || true
+    rm -rf sites/textile.localhost
+    bench new-site textile.localhost --db-root-password admin --admin-password admin --force --install-app crm --install-app erpnext --install-app textile
     bench use textile.localhost
     bench --site textile.localhost set-config dns_multitenant false
-else
-    bench --site textile.localhost install-app crm || true
-    bench --site textile.localhost install-app erpnext || true
-    bench --site textile.localhost install-app textile || true
-    bench use textile.localhost
-    bench --site textile.localhost set-config dns_multitenant false
+    touch sites/textile.localhost/.installed
 fi
 
 echo "textile.localhost" > sites/currentsite.txt
